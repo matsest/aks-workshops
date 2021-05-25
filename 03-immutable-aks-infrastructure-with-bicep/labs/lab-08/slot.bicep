@@ -1,3 +1,5 @@
+var uniqueName = 'mxe'
+
 var environment = 'dev'
 var slot = 'blue'
 var vnetAddressPrefixBase = '10.10'
@@ -5,11 +7,11 @@ var vnetAddressPrefixBase = '10.10'
 var vnetAddressPrefix = '${vnetAddressPrefixBase}.0.0/16'
 var aksSubnetAddressPrefix = '${vnetAddressPrefixBase}.0.0/20'
 var agwSubnetAddressPrefix = '${vnetAddressPrefixBase}.16.0/25'
-var vnetName = 'iac-${environment}-${slot}-vnet' 
-var agwName = 'iac-${environment}-${slot}-aks-agw' 
-var aksName = 'iac-${environment}-${slot}-aks' 
+var vnetName = 'iac-${environment}-${slot}-vnet'
+var agwName = 'iac-${environment}-${slot}-aks-agw'
+var aksName = 'iac-${environment}-${slot}-aks'
 var agwPipName = 'iac-${environment}-${slot}-agw-pip'
-var aksNsgName = 'iac-${environment}-${slot}-aks-nsg' 
+var aksNsgName = 'iac-${environment}-${slot}-aks-nsg'
 
 resource aksNsg 'Microsoft.Network/networkSecurityGroups@2020-11-01' = {
   name: aksNsgName
@@ -45,7 +47,7 @@ resource aksNsg 'Microsoft.Network/networkSecurityGroups@2020-11-01' = {
         }
       }
     ]
-  }  
+  }
 }
 
 resource vnet 'Microsoft.Network/virtualNetworks@2020-11-01' = {
@@ -62,26 +64,26 @@ resource vnet 'Microsoft.Network/virtualNetworks@2020-11-01' = {
     }
     subnets: [
       {
-        name: 'aks'    
+        name: 'aks'
         properties: {
           addressPrefix: aksSubnetAddressPrefix
           networkSecurityGroup: {
             id: aksNsg.id
           }
-        }      
+        }
       }
       {
-        name: 'agw'  
+        name: 'agw'
         properties: {
           addressPrefix: agwSubnetAddressPrefix
-        }      
+        }
       }
     ]
   }
 }
 
 resource aksSubnet 'Microsoft.Network/virtualNetworks/subnets@2020-11-01' = {
-  name: 'aks'    
+  name: 'aks'
   dependsOn: [
     vnet
   ]
@@ -95,7 +97,7 @@ resource aksSubnet 'Microsoft.Network/virtualNetworks/subnets@2020-11-01' = {
 }
 
 resource agwSubnet 'Microsoft.Network/virtualNetworks/subnets@2020-11-01' = {
-  name: 'agw'  
+  name: 'agw'
   dependsOn: [
     vnet
   ]
@@ -116,7 +118,7 @@ resource agwPip 'Microsoft.Network/publicIPAddresses@2020-11-01' = {
   properties: {
     publicIPAllocationMethod: 'Static'
     dnsSettings: {
-      domainNameLabel: 'iac-dev-blue-agw-pip'
+      domainNameLabel: '${uniqueName}-iac-dev-blue-agw-pip'
     }
   }
 }
@@ -241,14 +243,23 @@ resource aks 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
   identity: {
     type: 'SystemAssigned'
   }
-  properties: { 
+  properties: {
     dnsPrefix: aksName
     enableRBAC: true
     networkProfile: {
       networkPlugin: 'azure'
       loadBalancerSku: 'standard'
-      networkPolicy: 'calico'            
-    }    
+      networkPolicy: 'calico'
+    }
+    // Need to uncomment this at first because the validation checks for the resource id
+    //addonProfiles: {
+    //  ingressApplicationGateway: {
+    //    config: {
+    //      applicationGatewayId: agw.id
+    //    }
+    //    enabled: true
+    //  }
+    //}
     agentPoolProfiles: [
       {
         name: 'system'
